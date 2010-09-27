@@ -20,9 +20,12 @@
 #     2010/08/28 - 1.0 - Courgette
 #    * create plugin based on 1989trouble07's suggestion on the B3 forums
 #
+#     2010/09/14 - 1.1 - Courgette
+#    * handle player disconnection
+#
 
 __author__  = 'Courgette'
-__version__ = '1.0'
+__version__ = '1.1'
 
 
 import b3
@@ -57,11 +60,29 @@ class DuelPlugin(b3.plugin.Plugin):
             for duel in duels.values():
                 duel.registerKillEvent(event)
         elif event.type == b3.events.EVT_CLIENT_DISCONNECT:
-            self.onDisconnect(event.client)
+            self.onDisconnect(event)
         elif event.type == b3.events.EVT_GAME_ROUND_END:
             for c in self.console.clients.getList():
                 if c.isvar(self, 'duelling'):
                     self._showDuelsScoresToPlayer(c)
+                    
+    def onDisconnect(self, event):
+        """\
+        Handle client disconnection
+        """
+        self.debug('client disconnecting : %r' % event.client)
+        for c in self.console.clients.getList():
+            duels = event.client.var(self, 'duelling', {}).value
+            for duel in duels.values():
+                if duel._clientA == event.client or duel._clientB == event.client:
+                    duel.announceScoreTo(duel._clientA)
+                    duel.announceScoreTo(duel._clientB)
+                    self._cancelDuel(duel)
+        duels = event.client.var(self, 'duelling', {}).value
+        for duel in duels.values():
+            duel.announceScoreTo(duel._clientA)
+            duel.announceScoreTo(duel._clientB)
+            self._cancelDuel(duel)
 
     def cmd_duelcancel(self, data, client, cmd=None):
         """\
@@ -163,6 +184,7 @@ class DuelPlugin(b3.plugin.Plugin):
 
     def _cancelDuel(self, duel):
         """will remove references to this duel in both players' instances"""
+        self.debug('canceling duel %r' % duel)
         clientA = duel._clientA
         clientB = duel._clientB
         if clientA:
@@ -221,6 +243,7 @@ class Duel(object):
         self._clientB = clientB
         self._scores = {clientA: 0, clientB: 0}
         self._clientB.message('%s proposes a duel. To accept type !duel %s' % (self._clientA.exactName, self._clientA.name.lower()))
+        print "creating duel between clients %r and %r" % (clientA, clientB)
     
     def acceptDuel(self):
         self._status = Duel.STATUS_STARTED
@@ -278,6 +301,7 @@ if __name__ == '__main__':
     p = DuelPlugin(fakeConsole)
     p.onStartup()
     
+    """
     joe._exactName="^4J^5o^3e"
     joe.connects(cid=1)
     joe.says("!duel")
@@ -334,5 +358,15 @@ if __name__ == '__main__':
     simon.kills(moderator)
     simon.kills(moderator)
     moderator.kills(joe)
-    #while True: time.sleep(1)
+    """
+    
+    joe.connects(cid=1)
+    simon.connects(cid=2)
+    simon.groupBits = 1
+    joe.says('!duel simon')
+    simon.says('!duel joe')
+    time.sleep(1)
+    joe.disconnects()
+
+    while True: time.sleep(1)
     
