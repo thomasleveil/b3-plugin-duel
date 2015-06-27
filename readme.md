@@ -12,6 +12,10 @@ Allows you to challenge your friends in a duel.
 Type "!duel joe" to challenge your friend Joe. If he accepts your challenge, each kill made between the two of you will be counted.
 You can make multiple challenges in the same round and continue your challenge on multiple rounds (as long as each of you stay on the server)
 
+******
+*NOTE: since B3 v1.10.1 beta this plugin has been included in the standard plugins set, thus all patches and updates will be performed in the official B3 repository.*
+******
+
 Commands
 --------
 
